@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=test_for_javacode'
+      - 'POSTGRES_PASSWORD=0041'
+      - 'POSTGRES_USER=aleksandr'
+    ports:
+      - '5432'
+  test-service:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - spring.datasource.url=jdbc:postgresql://postgres:5432/test_for_javacode
+      - spring.datasource.driver-class-name=org.postgresql.Driver
+      - spring.datasource.password=0041
+      - spring.datasource.username=aleksandr
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
