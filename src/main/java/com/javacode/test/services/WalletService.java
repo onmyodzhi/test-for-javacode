@@ -6,7 +6,6 @@ import com.javacode.test.models.Wallet;
 import com.javacode.test.models.dtos.WalletDto;
 import com.javacode.test.models.dtos.WalletOperationDto;
 import com.javacode.test.models.mappers.WalletMapper;
-import com.javacode.test.models.mappers.WalletOperationMapper;
 import com.javacode.test.repositories.WalletRepository;
 import com.javacode.test.states.OperationType;
 import lombok.AccessLevel;
@@ -17,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.UUID;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service
 @RequiredArgsConstructor
@@ -26,9 +23,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class WalletService {
 
     final WalletRepository walletRepository;
-    final WalletOperationMapper walletOperationMapper;
     final WalletMapper walletMapper;
-    final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public WalletDto getWalletInfo(UUID walletId) {
         return walletRepository.findById(walletId)
@@ -36,22 +31,16 @@ public class WalletService {
                 .orElseThrow(() -> new WalletNotFoundException(walletId));
     }
 
-    @Transactional
+    @Transactional()
     public WalletDto operation(WalletOperationDto walletOperationDto) {
         BigDecimal amount = walletOperationDto.getAmount();
         OperationType operationType = walletOperationDto.getOperationType();
         UUID walletId = walletOperationDto.getId();
 
-        lock.writeLock().lock();
-
-        try {
-            return switch (operationType) {
-                case DEPOSIT -> adjustWalletBalance(walletId, amount);
-                case WITHDRAW -> adjustWalletBalance(walletId, amount.negate());
-            };
-        } finally {
-            lock.writeLock().unlock();
-        }
+        return switch (operationType) {
+            case DEPOSIT -> adjustWalletBalance(walletId, amount);
+            case WITHDRAW -> adjustWalletBalance(walletId, amount.negate());
+        };
     }
 
     private WalletDto adjustWalletBalance(UUID walletId, BigDecimal amount) {
